@@ -4,6 +4,7 @@
 #include <cmath>
 #include <omp.h>
 #include <utility>
+#include <vector>
 
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
@@ -28,7 +29,44 @@ void pageRank(Graph g, double* solution, double damping, double convergence)
   for (int i = 0; i < numNodes; ++i) {
     solution[i] = equal_prob;
   }
+
+  vector<Vertex> no_outgoing_edges;
+  for (int i = 0; i < numNodes; ++i) {
+    if (outgoing_size(g, i) == 0) {
+      no_outgoing_edges.push_back(i);
+    }
+  }
+
+  int num_no_outgoing = no_outgoing_edges.size();
+
   
+  double *score_new = new double[numNodes];
+  bool converged = false;
+  double global_diff = 0.0;
+
+  while (!converged) {
+    // loop over incoming edges and store sum in score_new
+    double sum_no_outgoing = 0.0;
+    for (int k = 0; k < num_no_outgoing; ++k) { // k for Kayvon and Kunle <3
+      sum_no_outgoing += (damping * solution[no_outgoing_edges[k]]) / numNodes;
+    }
+    for (int i = 0; i < numNodes; ++i) {
+      const Vertex* start = incoming_begin(g, i);
+      const Vertex* end = incoming_end(g, i);
+      for (const Vertex* j = start; j != end; ++j) {
+        score_new[i] += (solution[*j] / outgoing_size(g, *j));
+      }
+      score_new[i] = (damping * score_new[i]) + (1.0-damping) / numNodes;
+      score_new[i] += sum_no_outgoing;
+    }
+    for (int l = 0; l < numNodes; ++l) { // l for Luigi <3
+      global_diff += abs(score_new[l] - solution[l]);
+      solution[l] = score_new[l];
+    }
+    converged = (global_diff < convergence)
+  }
+  delete[] score_new;
+
   
   /*
      CS149 students: Implement the page rank algorithm here.  You
