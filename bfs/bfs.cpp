@@ -40,7 +40,6 @@ void top_down_step(
         for (int i=0; i<frontier->count; i++) {
 
             int node = frontier->vertices[i];
-            std::cout << "node:  " << node << std::endl;
             int start_edge = g->outgoing_starts[node];
             int end_edge = (node == g->num_nodes - 1)
                             ? g->num_edges
@@ -58,7 +57,6 @@ void top_down_step(
             }
         }
         int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size());
-        std::cout << "index:  " << index << std::endl;
         for (int i = 0; i < partial_frontier.size(); ++i) {
             new_frontier->vertices[i + index] = partial_frontier[i];
         }
