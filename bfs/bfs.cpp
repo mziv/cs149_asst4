@@ -46,6 +46,7 @@ void top_down_step(
                             : g->outgoing_starts[node + 1];
 
             // attempt to add all neighbors to the new frontier
+            #pragma omp parallel for                                                        
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
                 int outgoing = g->outgoing_edges[neighbor];
                 int curr_dst = distances[outgoing];
@@ -53,6 +54,7 @@ void top_down_step(
                 if (!__sync_bool_compare_and_swap(&distances[outgoing], curr_dst, distances[node] + 1)) continue;
 
                 //__sync_fetch_and_add(&new_frontier->count, 1);
+                #pragma omp atomic
                 partial_frontier.push_back(outgoing);
             }
         }
