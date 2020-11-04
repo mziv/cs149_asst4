@@ -57,7 +57,7 @@ void top_down_step(
                 partial_frontier.push_back(outgoing);
             }
         }
-        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size()) - partial_frontier.size();
+        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size());
         std::cout << "index:  " << index << std::endl;
         for (int i = 0; i < partial_frontier.size(); ++i) {
             new_frontier->vertices[i + index] = partial_frontier[i];
