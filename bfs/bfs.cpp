@@ -32,12 +32,13 @@ void vertex_set_zero(vertex_set* list) {
 // Take one step of "top-down" BFS.  For each vertex on the frontier,
 // follow all outgoing edges, and add all neighboring vertices to the
 // new_frontier.
-void top_down_step(
+bool top_down_step(
     Graph g,
     vertex_set* frontier,
     vertex_set* new_frontier,
     int* distances)
 {
+    bool added_more_work = false;
     #pragma omp parallel for                                                        
     for (int i=0; i<frontier->max_vertices; i++) {
 
@@ -57,9 +58,11 @@ void top_down_step(
             int curr_dst = distances[outgoing];
             if (curr_dst != NOT_VISITED_MARKER) continue;
             if (!__sync_bool_compare_and_swap(&distances[outgoing], curr_dst, distances[node] + 1)) continue;
+            added_more_work = true;
             new_frontier->vertices[outgoing] = 1;
         }
     }
+    return added_more_work;
 }
 
 // Implements top-down BFS.
@@ -84,8 +87,8 @@ void bfs_top_down(Graph graph, solution* sol) {
     // setup frontier with the root node
     frontier->vertices[ROOT_NODE_ID] = 1;
     sol->distances[ROOT_NODE_ID] = 0;
-
-    while (frontier->count != 0) {
+    bool more_work_exists = true;
+    while (more_work_exists) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
@@ -93,7 +96,7 @@ void bfs_top_down(Graph graph, solution* sol) {
 
         vertex_set_clear(new_frontier);
         vertex_set_zero(new_frontier);
-        top_down_step(graph, frontier, new_frontier, sol->distances);
+        more_work_exists = top_down_step(graph, frontier, new_frontier, sol->distances);
 #ifdef VERBOSE
     double end_time = CycleTimer::currentSeconds();
     printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
