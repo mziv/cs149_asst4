@@ -57,7 +57,8 @@ void top_down_step(
             }
         }
         int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size());
-        for (int i = 0; i < partial_frontier.size(); ++i) {
+        #pragma omp parallel for                                                        
+        for (int i = 0; i < partial_frontier.size(); ++i) {            
             new_frontier->vertices[i + index] = partial_frontier[i];
         }
     }
