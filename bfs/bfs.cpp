@@ -7,7 +7,6 @@
 #include <omp.h>
 #include <vector>
 #include <iostream>
-#include <mutex>
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
 
@@ -36,7 +35,6 @@ void top_down_step(
     #pragma omg parallel
     {
         std::vector<int> partial_frontier;
-        std::mutex m;
         #pragma omp for                                                        
         for (int i=0; i<frontier->count; i++) {
 
@@ -47,7 +45,6 @@ void top_down_step(
                             : g->outgoing_starts[node + 1];
 
             // attempt to add all neighbors to the new frontier
-            #pragma omp parallel for                                                        
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
                 int outgoing = g->outgoing_edges[neighbor];
                 int curr_dst = distances[outgoing];
@@ -55,10 +52,7 @@ void top_down_step(
                 if (!__sync_bool_compare_and_swap(&distances[outgoing], curr_dst, distances[node] + 1)) continue;
 
                 //__sync_fetch_and_add(&new_frontier->count, 1);
-                m.lock();
-                partial_frontier.push_back(outgoing);
-                m.unlock();
-                
+                partial_frontier.push_back(outgoing);                
             }
         }
         int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size());
