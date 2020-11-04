@@ -18,7 +18,7 @@ void vertex_set_clear(vertex_set* list) {
 
 void vertex_set_init(vertex_set* list, int count) {
     list->max_vertices = count;
-    list->vertices = (int*)calloc(sizeof(int) * list->max_vertices);
+    list->vertices = (int*)calloc(list->max_vertices, sizeof(int));
     vertex_set_clear(list);
 }
 
