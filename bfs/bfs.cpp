@@ -18,8 +18,15 @@ void vertex_set_clear(vertex_set* list) {
 
 void vertex_set_init(vertex_set* list, int count) {
     list->max_vertices = count;
-    list->vertices = (int*)malloc(sizeof(int) * list->max_vertices);
+    list->vertices = (int*)calloc(sizeof(int) * list->max_vertices);
     vertex_set_clear(list);
+}
+
+void vertex_set_zero(vertex_set* list) {
+    #pragma omp parallel for                                                        
+    for (int i = 0; i < list->max_vertices; ++i) {
+        list->vertices[i] = 0;
+    }
 }
 
 // Take one step of "top-down" BFS.  For each vertex on the frontier,
@@ -32,9 +39,10 @@ void top_down_step(
     int* distances)
 {
     #pragma omp parallel for                                                        
-    for (int i=0; i<frontier->count; i++) {
+    for (int i=0; i<frontier->max_vertices; i++) {
 
-        int node = frontier->vertices[i];
+        int node = i;
+        if (frontier->vertices[i] == 0) continue; // No need; this node isn't flagged so it's not in our frontier.
 
         int start_edge = g->outgoing_starts[node];
         int end_edge = (node == g->num_nodes - 1)
@@ -44,15 +52,12 @@ void top_down_step(
         // attempt to add all neighbors to the new frontier
         #pragma omp parallel for                                                        
         for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
+
             int outgoing = g->outgoing_edges[neighbor];
             int curr_dst = distances[outgoing];
             if (curr_dst != NOT_VISITED_MARKER) continue;
             if (!__sync_bool_compare_and_swap(&distances[outgoing], curr_dst, distances[node] + 1)) continue;
-            int index = new_frontier->count;
-            while (!__sync_bool_compare_and_swap(&new_frontier->count, index, index + 1)) {
-                index = new_frontier->count;
-            }
-            new_frontier->vertices[index] = outgoing;
+            new_frontier->vertices[outgoing] = 1;
         }
     }
 }
@@ -77,7 +82,7 @@ void bfs_top_down(Graph graph, solution* sol) {
         sol->distances[i] = NOT_VISITED_MARKER;
 
     // setup frontier with the root node
-    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    frontier->vertices[ROOT_NODE_ID] = 1;
     sol->distances[ROOT_NODE_ID] = 0;
 
     while (frontier->count != 0) {
@@ -87,9 +92,8 @@ void bfs_top_down(Graph graph, solution* sol) {
 #endif
 
         vertex_set_clear(new_frontier);
-
+        vertex_set_zero(new_frontier);
         top_down_step(graph, frontier, new_frontier, sol->distances);
-        //barrier();
 #ifdef VERBOSE
     double end_time = CycleTimer::currentSeconds();
     printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
