@@ -31,7 +31,7 @@ void top_down_step(
     vertex_set* new_frontier,
     int* distances)
 {
-
+    #pragma omp parallel for                                                        
     for (int i=0; i<frontier->count; i++) {
 
         int node = frontier->vertices[i];
@@ -42,14 +42,17 @@ void top_down_step(
                            : g->outgoing_starts[node + 1];
 
         // attempt to add all neighbors to the new frontier
+        #pragma omp parallel for                                                        
         for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
-
-            if (distances[outgoing] == NOT_VISITED_MARKER) {
-                distances[outgoing] = distances[node] + 1;
-                int index = new_frontier->count++;
-                new_frontier->vertices[index] = outgoing;
+            int curr_dst = distances[outgoing];
+            if (curr_dst != NOT_VISITED_MARKER) continue;
+            if (!__sync_bool_compare_and_swap(&distances[outgoing], curr_dst, distances[node] + 1)) continue;
+            int index = new_frontier->count;
+            while (!__sync_bool_compare_and_swap(&new_frontier->count, index, index + 1)) {
+                index = new_frontier->count;
             }
+            new_frontier->vertices[index] = outgoing;
         }
     }
 }
@@ -69,6 +72,7 @@ void bfs_top_down(Graph graph, solution* sol) {
     vertex_set* new_frontier = &list2;
 
     // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for                                                        
     for (int i=0; i<graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
@@ -85,7 +89,7 @@ void bfs_top_down(Graph graph, solution* sol) {
         vertex_set_clear(new_frontier);
 
         top_down_step(graph, frontier, new_frontier, sol->distances);
-
+        //barrier();
 #ifdef VERBOSE
     double end_time = CycleTimer::currentSeconds();
     printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);

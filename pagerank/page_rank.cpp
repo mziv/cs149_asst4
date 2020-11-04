@@ -5,6 +5,7 @@
 #include <omp.h>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
@@ -19,18 +20,18 @@
 //
 void pageRank(Graph g, double* solution, double damping, double convergence)
 {
-
-
   // initialize vertex weights to uniform probability. Double
   // precision scores are used to avoid underflow for large graphs
 
   int numNodes = num_nodes(g);
   double equal_prob = 1.0 / numNodes;
+  #pragma omp parallel for                                                        
   for (int i = 0; i < numNodes; ++i) {
     solution[i] = equal_prob;
   }
 
-  vector<Vertex> no_outgoing_edges;
+  // TODO: Lock the vector or flag this?
+  std::vector<Vertex> no_outgoing_edges;
   for (int i = 0; i < numNodes; ++i) {
     if (outgoing_size(g, i) == 0) {
       no_outgoing_edges.push_back(i);
@@ -38,18 +39,26 @@ void pageRank(Graph g, double* solution, double damping, double convergence)
   }
 
   int num_no_outgoing = no_outgoing_edges.size();
-
-  
   double *score_new = new double[numNodes];
+    
+  #pragma omp parallel for                                                        
+  for (int i = 0; i < numNodes; i++){
+    score_new[i] = 0.0;
+  }
+
   bool converged = false;
   double global_diff = 0.0;
 
-  while (!converged) {
+ while (!converged) {
     // loop over incoming edges and store sum in score_new
     double sum_no_outgoing = 0.0;
+
+    // TODO: keep serial?
     for (int k = 0; k < num_no_outgoing; ++k) { // k for Kayvon and Kunle <3
       sum_no_outgoing += (damping * solution[no_outgoing_edges[k]]) / numNodes;
     }
+
+    #pragma omp parallel for                                                        
     for (int i = 0; i < numNodes; ++i) {
       const Vertex* start = incoming_begin(g, i);
       const Vertex* end = incoming_end(g, i);
@@ -59,11 +68,19 @@ void pageRank(Graph g, double* solution, double damping, double convergence)
       score_new[i] = (damping * score_new[i]) + (1.0-damping) / numNodes;
       score_new[i] += sum_no_outgoing;
     }
-    for (int l = 0; l < numNodes; ++l) { // l for Luigi <3
-      global_diff += abs(score_new[l] - solution[l]);
-      solution[l] = score_new[l];
+
+    for (int l = 0; l < numNodes; ++l) {
+      global_diff += std::abs(score_new[l] - solution[l]);
     }
-    converged = (global_diff < convergence)
+
+    converged = (global_diff < convergence);
+    global_diff = 0.0;
+
+    #pragma omp parallel for                                                        
+    for (int i = 0; i < numNodes; i++) {
+      solution[i] = score_new[i];
+      score_new[i] = 0.0;
+    }
   }
   delete[] score_new;
 
