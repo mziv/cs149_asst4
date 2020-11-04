@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <omp.h>
 #include <vector>
-
+#include <iostream>
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
 
@@ -40,7 +40,7 @@ void top_down_step(
         for (int i=0; i<frontier->count; i++) {
 
             int node = frontier->vertices[i];
-
+            std::cout << "node:  " << node << std::endl;
             int start_edge = g->outgoing_starts[node];
             int end_edge = (node == g->num_nodes - 1)
                             ? g->num_edges
