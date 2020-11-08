@@ -113,7 +113,7 @@ void bottom_up_step(
     vertex_set* new_frontier,
     int* distances)
 {
-    std::cout << "bottom UP" << std::endl;
+    // std::cout << "bottom UP" << std::endl;
     
     // Build a hash set of the frontier for easy inclusion test
     std::unordered_set<int> frontier_set;
