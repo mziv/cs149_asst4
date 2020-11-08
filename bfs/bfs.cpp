@@ -7,6 +7,7 @@
 #include <omp.h>
 #include <vector>
 #include <iostream>
+#include <unordered_set>
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
 
@@ -106,19 +107,100 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
+void bottom_up_step(
+    Graph g,
+    vertex_set* frontier,
+    vertex_set* new_frontier,
+    int* distances)
+{
+    omp_set_nested(1);
+    // Build a hash set of the frontier for easy inclusion test
+    std::unordered_set<int> frontier_set;
+    for (int i=0; i<frontier->count; i++) frontier_set.insert(frontier->vertices[i]);
+    int cur_dist = distances[frontier->vertices[0]] + 1;
+
+    // for each vertex v in graph:
+    #pragma omp parallel
+    {
+        std::vector<int> partial_frontier;
+
+        #pragma omp for
+        for (int v = 0; v < g->num_nodes; ++v) {
+            // if v has not been visited 
+            if (distances[v] != NOT_VISITED_MARKER) continue;
+            // AND v shares an incoming edge with a vertex u on the frontier:
+            bool shares_edge = false;
+            int start_edge = g->incoming_starts[v];
+            int end_edge = (v == g->num_nodes - 1)
+                            ? g->num_edges
+                            : g->incoming_starts[v + 1];
+
+            // todo: does hash set have multiple readers?
+            #pragma omp parallel for
+            for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
+                if (frontier_set.count(g->incoming_edges[neighbor]) > 0) {
+                    shares_edge = true;
+                    // break;
+                }
+            }
+            
+            if (shares_edge) {
+                // add vertex v to frontier;
+                // int index = new_frontier->count++;
+                // new_frontier->vertices[index] = v;
+                // distances[v] = cur_dist;
+                partial_frontier.push_back(v);
+                distances[v] = cur_dist;
+            }
+        }
+
+        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.size());
+        #pragma omp parallel for                                                        
+        for (int i = 0; i < partial_frontier.size(); ++i) {            
+            new_frontier->vertices[i + index] = partial_frontier[i];
+        }
+    }
+}
+
+
 void bfs_bottom_up(Graph graph, solution* sol)
 {
-    // CS149 students:
-    //
-    // You will need to implement the "bottom up" BFS here as
-    // described in the handout.
-    //
-    // As a result of your code's execution, sol.distances should be
-    // correctly populated for all nodes in the graph.
-    //
-    // As was done in the top-down case, you may wish to organize your
-    // code by creating subroutine bottom_up_step() that is called in
-    // each step of the BFS process.
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set* frontier = &list1;
+    vertex_set* new_frontier = &list2;
+
+    // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for                                                        
+    for (int i=0; i<graph->num_nodes; i++)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    while (frontier->count != 0) {
+
+#ifdef VERBOSE
+        double start_time = CycleTimer::currentSeconds();
+#endif
+
+        vertex_set_clear(new_frontier);
+
+        bottom_up_step(graph, frontier, new_frontier, sol->distances);
+#ifdef VERBOSE
+    double end_time = CycleTimer::currentSeconds();
+    printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+#endif
+
+        // swap pointers
+        vertex_set* tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
+    }
 }
 
 void bfs_hybrid(Graph graph, solution* sol)
