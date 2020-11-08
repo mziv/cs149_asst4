@@ -32,7 +32,7 @@ void top_down_step(
     vertex_set* new_frontier,
     int* distances)
 {
-    #pragma omg parallel
+    #pragma omp parallel
     {
         std::vector<int> partial_frontier;
         #pragma omp for                                                        
