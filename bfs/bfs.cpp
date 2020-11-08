@@ -113,7 +113,8 @@ void bottom_up_step(
     vertex_set* new_frontier,
     int* distances)
 {
-    omp_set_nested(1);
+    std::cout << "bottom UP" << std::endl;
+    
     // Build a hash set of the frontier for easy inclusion test
     std::unordered_set<int> frontier_set;
     for (int i=0; i<frontier->count; i++) frontier_set.insert(frontier->vertices[i]);
@@ -123,7 +124,7 @@ void bottom_up_step(
     #pragma omp parallel
     {
         std::vector<int> partial_frontier;
-
+        
         #pragma omp for
         for (int v = 0; v < g->num_nodes; ++v) {
             // if v has not been visited 
@@ -135,12 +136,10 @@ void bottom_up_step(
                             ? g->num_edges
                             : g->incoming_starts[v + 1];
 
-            // todo: does hash set have multiple readers?
-            #pragma omp parallel for
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
                 if (frontier_set.count(g->incoming_edges[neighbor]) > 0) {
                     shares_edge = true;
-                    // break;
+                    break;
                 }
             }
             
