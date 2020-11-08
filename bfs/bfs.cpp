@@ -45,7 +45,7 @@ void top_down_step(
                             : g->outgoing_starts[node + 1];
 
             // attempt to add all neighbors to the new frontier
-            #pragma omp parallel for                                                        
+            #pragma omp parallel for // REMOVE this                                                       
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
                 int outgoing = g->outgoing_edges[neighbor];
                 int curr_dst = distances[outgoing];
