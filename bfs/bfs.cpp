@@ -249,5 +249,18 @@ void bfs_bottom_up(Graph graph, solution* sol)
 
 void bfs_hybrid(Graph graph, solution* sol)
 {
-    bfs_top_down(graph, sol);
+    float ratio = graph->num_edges / (float)graph->num_nodes;
+    // std::cout << "Ratio: " << ratio << std::endl;
+    if (ratio < 7) {
+        bfs_top_down(graph, sol);
+    }
+    else {
+        bfs_bottom_up(graph, sol);
+    }
+    
+
+    // if graph is densely connected:
+    // toggle to bottom up bfs after a few runs of top down
+    // else:
+    // just use top down?
 }
