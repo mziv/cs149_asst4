@@ -249,8 +249,5 @@ void bfs_bottom_up(Graph graph, solution* sol)
 
 void bfs_hybrid(Graph graph, solution* sol)
 {
-    // CS149 students:
-    //
-    // You will need to implement the "hybrid" BFS here as
-    // described in the handout.
+    bfs_top_down(graph, sol);
 }
