@@ -113,26 +113,26 @@ void bfs_top_down(Graph graph, solution* sol) {
 
 void bottom_up_step(
     Graph g,
-    int* frontier,
-    int* new_frontier,
+    vertex_set* frontier,
+    vertex_set* new_frontier,
     vertex_set* unvisited,
     vertex_set* new_unvisited,
     int* distances)
 {
     // std::cout << "bottom UP" << std::endl;
-    // int cur_dist = distances[frontier->vertices[0]] + 1;
+    int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
-    // #pragma omp parallel for
-    // for (int i = 0; i < frontier->count; ++i) {
-    //     flags[frontier->vertices[i]] = 1;
-    // }
+    int* flags = (int *)calloc(g->num_nodes, sizeof(int));
+    #pragma omp parallel for
+    for (int i = 0; i < frontier->count; ++i) {
+        flags[frontier->vertices[i]] = 1;
+    }
 
     // for each vertex v in graph:
     #pragma omp parallel
     {
-        // vertex_set partial_frontier;
-        // vertex_set_init(&partial_frontier, g->num_nodes);
+        vertex_set partial_frontier;
+        vertex_set_init(&partial_frontier, g->num_nodes);
         
         vertex_set partial_unvisited;
         vertex_set_init(&partial_unvisited, g->num_nodes);
@@ -141,7 +141,6 @@ void bottom_up_step(
         // double start_time = CycleTimer::currentSeconds();
         #pragma omp for
         for (int i = 0; i < unvisited->count; ++i) {
-            int cur_dist;
             int v = unvisited->vertices[i];            
             // check if v shares an incoming edge with a vertex u on the frontier
             bool shares_edge = false;
@@ -151,8 +150,7 @@ void bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (frontier[g->incoming_edges[neighbor]] == 1) {
-                    cur_dist = distances[g->incoming_edges[neighbor]] + 1;
+                if (flags[g->incoming_edges[neighbor]] == 1) {
                     shares_edge = true;
                     break;
                 }
@@ -160,8 +158,7 @@ void bottom_up_step(
             
             if (shares_edge) {
                 // add vertex v to frontier
-                // partial_frontier.vertices[partial_frontier.count++] = v;
-                new_frontier[v] = 1;
+                partial_frontier.vertices[partial_frontier.count++] = v;
                 distances[v] = cur_dist;
             } else {
                 // v is still unvisited
@@ -174,14 +171,14 @@ void bottom_up_step(
         // #pragma omp barrier
 
         // start_time = CycleTimer::currentSeconds();
-        // int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
-        // memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
+        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
+        memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
         // #pragma omp parallel for                                                        
         // for (int i = 0; i < partial_frontier.size(); ++i) {            
         //     new_frontier->vertices[i + index] = partial_frontier[i];
         // }
 
-        int index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
+        index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
         memcpy(new_unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
         // #pragma omp parallel for                                                   
         // for (int i = 0; i < partial_unvisited.size(); ++i) {            
@@ -191,7 +188,7 @@ void bottom_up_step(
         // printf("copying over pieces %.4f sec\n", end_time - start_time);
     }
 
-    // free(flags);
+    free(flags);
 }
 
 
@@ -206,10 +203,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
     vertex_set_init(&list3, graph->num_nodes);
     vertex_set_init(&list4, graph->num_nodes);
 
-    // vertex_set* frontier      = &list1;
-    // vertex_set* new_frontier  = &list2;
-    int* frontier = (int *)calloc(graph->num_nodes, sizeof(int));
-    int* new_frontier = (int *)calloc(graph->num_nodes, sizeof(int));
+    vertex_set* frontier      = &list1;
+    vertex_set* new_frontier  = &list2;
     vertex_set* unvisited     = &list3;
     vertex_set* new_unvisited = &list4;
 
@@ -223,18 +218,16 @@ void bfs_bottom_up(Graph graph, solution* sol)
     unvisited->count = graph->num_nodes - 1;
 
     // setup frontier with the root node
-    // frontier->vertices[frontier->count++] = ROOT_NODE_ID;
-    frontier[ROOT_NODE_ID] = 1;
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
 
-    while (unvisited->count != 0) {
+    while (frontier->count != 0) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
 
-        // vertex_set_clear(new_frontier);
-        memset(new_frontier, 0, graph->num_nodes*sizeof(int));
+        vertex_set_clear(new_frontier);
         vertex_set_clear(new_unvisited);
 
         bottom_up_step(graph, frontier, new_frontier, unvisited, new_unvisited, sol->distances);
@@ -244,11 +237,11 @@ void bfs_bottom_up(Graph graph, solution* sol)
 #endif
 
         // swap pointers
-        int* tmp_f = frontier;
+        vertex_set* tmp = frontier;
         frontier = new_frontier;
-        new_frontier = tmp_f;
+        new_frontier = tmp;
 
-        vertex_set* tmp = unvisited;
+        tmp = unvisited;
         unvisited = new_unvisited;
         new_unvisited = tmp;
     }
