@@ -123,7 +123,7 @@ void bottom_up_step(
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for
     for (int i = 0; i < frontier->count; ++i) {
         flags[frontier->vertices[i]] = 1;
     }
@@ -211,7 +211,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
     vertex_set* new_unvisited = &list4;
 
     // initialize all nodes to NOT_VISITED
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for
     for (int i=0; i<graph->num_nodes; i++) {
         sol->distances[i] = NOT_VISITED_MARKER;
         unvisited->vertices[i] = i + 1; // WARNING: this assumes root node id is always 0
@@ -297,7 +297,7 @@ void bfs_hybrid(Graph graph, solution* sol)
     vertex_set* new_unvisited = &list4;
 
     // initialize all nodes to NOT_VISITED
-    #pragma omp parallel for schedule(static)                                                     
+    #pragma omp parallel for                                                   
     for (int i=0; i<graph->num_nodes; i++) {
         sol->distances[i] = NOT_VISITED_MARKER;
     }
