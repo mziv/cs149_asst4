@@ -129,7 +129,7 @@ void bottom_up_step(
     // }
 
     int* flags = new int[g->num_nodes];
-    memcpy(&flags, distances, g->num_nodes*sizeof(int));
+    memcpy(flags, distances, g->num_nodes*sizeof(int));
 
     // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
