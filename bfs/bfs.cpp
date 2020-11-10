@@ -122,11 +122,11 @@ void bottom_up_step(
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
-    // #pragma omp parallel for
-    // for (int i = 0; i < frontier->count; ++i) {
-    //     flags[frontier->vertices[i]] = 1;
-    // }
+    int* flags = (int *)calloc(g->num_nodes, sizeof(int));
+    #pragma omp parallel for
+    for (int i = 0; i < frontier->count; ++i) {
+        flags[frontier->vertices[i]] = 1;
+    }
 
     // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
@@ -136,16 +136,14 @@ void bottom_up_step(
         vertex_set partial_frontier;
         vertex_set_init(&partial_frontier, g->num_nodes);
         
-        // vertex_set partial_unvisited;
-        // vertex_set_init(&partial_unvisited, g->num_nodes);
+        vertex_set partial_unvisited;
+        vertex_set_init(&partial_unvisited, g->num_nodes);
 
         // if v has not been visited 
         // double start_time = CycleTimer::currentSeconds();
-        #pragma omp for schedule(static)
-        for (int v = 0; v < g->num_nodes; ++v) {
-            // int v = unvisited->vertices[i]; 
-            if (distances[v] != NOT_VISITED_MARKER) continue;
-
+        #pragma omp for
+        for (int i = 0; i < unvisited->count; ++i) {
+            int v = unvisited->vertices[i];            
             // check if v shares an incoming edge with a vertex u on the frontier
             bool shares_edge = false;
             int start_edge = g->incoming_starts[v];
@@ -154,7 +152,7 @@ void bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (distances[g->incoming_edges[neighbor]] != NOT_VISITED_MARKER) {
+                if (flags[g->incoming_edges[neighbor]] == 1) {
                     shares_edge = true;
                     break;
                 }
@@ -163,10 +161,10 @@ void bottom_up_step(
             if (shares_edge) {
                 // add vertex v to frontier
                 partial_frontier.vertices[partial_frontier.count++] = v;
-                // distances[v] = cur_dist; // do this later!
+                distances[v] = cur_dist;
             } else {
                 // v is still unvisited
-                // partial_unvisited.vertices[partial_unvisited.count++] = v;
+                partial_unvisited.vertices[partial_unvisited.count++] = v;
             }
         }
         // double end_time = CycleTimer::currentSeconds();
@@ -182,30 +180,17 @@ void bottom_up_step(
         //     new_frontier->vertices[i + index] = partial_frontier[i];
         // }
 
-        // index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
-        // memcpy(new_unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
+        index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
+        memcpy(new_unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
         // #pragma omp parallel for                                                   
         // for (int i = 0; i < partial_unvisited.size(); ++i) {            
         //     new_unvisited->vertices[i + index] = partial_unvisited[i];
         // }
         // end_time = CycleTimer::currentSeconds();
         // printf("copying over pieces %.4f sec\n", end_time - start_time);
-
-        #pragma omp barrier
-
-        // now we can update the distances
-        for (int i = 0; i < partial_frontier.count; ++i) {
-            distances[partial_frontier.vertices[i]] = cur_dist;
-        }
     }
 
-    // free(flags);
-
-    // set the distances in a separate step
-    // #pragma omp parallel for
-    // for (int i = 0; i < new_frontier->count; ++i) {
-    //     distances[new_frontier->vertices[i]] = cur_dist;
-    // }
+    free(flags);
 }
 
 
@@ -268,7 +253,7 @@ void bfs_hybrid(Graph graph, solution* sol)
 {
     float ratio = graph->num_edges / (float)graph->num_nodes;
     // std::cout << "Ratio: " << ratio << std::endl;
-    if (ratio < 15) {
+    if (ratio < 7) {
         bfs_top_down(graph, sol);
     }
     else {
