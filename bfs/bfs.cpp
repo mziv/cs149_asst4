@@ -122,11 +122,13 @@ void bottom_up_step(
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    int* flags = (int *)calloc(g->num_nodes, sizeof(int));
-    #pragma omp parallel for
-    for (int i = 0; i < frontier->count; ++i) {
-        flags[frontier->vertices[i]] = 1;
-    }
+    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
+    // #pragma omp parallel for
+    // for (int i = 0; i < frontier->count; ++i) {
+    //     flags[frontier->vertices[i]] = 1;
+    // }
+
+    // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
     // for each vertex v in graph:
     #pragma omp parallel
@@ -139,7 +141,7 @@ void bottom_up_step(
 
         // if v has not been visited 
         // double start_time = CycleTimer::currentSeconds();
-        #pragma omp for
+        #pragma omp for schedule(static)
         for (int i = 0; i < unvisited->count; ++i) {
             int v = unvisited->vertices[i];            
             // check if v shares an incoming edge with a vertex u on the frontier
@@ -150,7 +152,7 @@ void bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (flags[g->incoming_edges[neighbor]] == 1) {
+                if (distances[g->incoming_edges[neighbor]] != NOT_VISITED_MARKER) {
                     shares_edge = true;
                     break;
                 }
@@ -159,7 +161,7 @@ void bottom_up_step(
             if (shares_edge) {
                 // add vertex v to frontier
                 partial_frontier.vertices[partial_frontier.count++] = v;
-                distances[v] = cur_dist;
+                // distances[v] = cur_dist; // do this later!
             } else {
                 // v is still unvisited
                 partial_unvisited.vertices[partial_unvisited.count++] = v;
@@ -186,9 +188,22 @@ void bottom_up_step(
         // }
         // end_time = CycleTimer::currentSeconds();
         // printf("copying over pieces %.4f sec\n", end_time - start_time);
+
+        #pragma omp barrier
+
+        // now we can update the distances
+        for (int i = 0; i < partial_frontier.count; ++i) {
+            distances[partial_frontier.vertices[i]] = cur_dist;
+        }
     }
 
-    free(flags);
+    // free(flags);
+
+    // set the distances in a separate step
+    // #pragma omp parallel for
+    // for (int i = 0; i < new_frontier->count; ++i) {
+    //     distances[new_frontier->vertices[i]] = cur_dist;
+    // }
 }
 
 
