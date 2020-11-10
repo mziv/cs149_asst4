@@ -128,8 +128,8 @@ void bottom_up_step(
     //     flags[frontier->vertices[i]] = 1;
     // }
 
-    int flags[g->num_nodes];
-    memcpy(&flags, distances, g->num_nodes*sizeof(int));
+    int* flags = new int[g->num_nodes];
+    memcpy(flags, distances, g->num_nodes*sizeof(int));
 
     // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
@@ -144,7 +144,7 @@ void bottom_up_step(
 
         // if v has not been visited 
         // double start_time = CycleTimer::currentSeconds();
-        #pragma omp for schedule(dynamic)
+        #pragma omp for 
         for (int i = 0; i < unvisited->count; ++i) {
             int v = unvisited->vertices[i];            
             // check if v shares an incoming edge with a vertex u on the frontier
@@ -194,6 +194,7 @@ void bottom_up_step(
     }
 
     // free(flags);
+    delete[] flags;
 }
 
 
