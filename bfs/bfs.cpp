@@ -195,6 +195,8 @@ void bottom_up_step(
 
 void bfs_bottom_up(Graph graph, solution* sol)
 {
+    std::cout << "edge to node ratio: " << graph->num_edges / (float) graph->num_nodes << std::endl;
+
     vertex_set list1;
     vertex_set list2;
     vertex_set list3;
@@ -222,8 +224,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
 
-    int* flags = new int[graph->num_nodes];
-    memset(flags, 0, sizeof(int)*graph->num_nodes);
+    int* flags = (int *)calloc(graph->num_nodes, sizeof(int)); //new int[graph->num_nodes];
+    // memset(flags, 0, sizeof(int)*graph->num_nodes);
     flags[0] = 1;
 
     while (frontier->count != 0) {
@@ -251,23 +253,23 @@ void bfs_bottom_up(Graph graph, solution* sol)
         new_unvisited = tmp;
     }
 
-    delete[] flags;
+    free(flags);
 }
 
 void bfs_hybrid(Graph graph, solution* sol)
 {
     float ratio = graph->num_edges / (float)graph->num_nodes;
     // std::cout << "Ratio: " << ratio << std::endl;
-    if (ratio < 7) {
-        bfs_top_down(graph, sol);
-    }
-    else {
-        bfs_bottom_up(graph, sol);
-    }
+    // if (ratio < 7) {
+    //     bfs_top_down(graph, sol);
+    // }
+    // else {
+    //     bfs_bottom_up(graph, sol);
+    // }
     
+    // start with top down bfs
+    // keep aggregate sum of # nodes visited (in frontier)
+    // at some threshold, swap to bottom up bfs
 
-    // if graph is densely connected:
-    // toggle to bottom up bfs after a few runs of top down
-    // else:
-    // just use top down?
+
 }
