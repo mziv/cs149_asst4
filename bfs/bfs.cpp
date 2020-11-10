@@ -256,20 +256,96 @@ void bfs_bottom_up(Graph graph, solution* sol)
     free(flags);
 }
 
+void initialize_unvisited(Graph graph, int* distances, vertex_set* unvisited) {
+    #pragma omp parallel
+    {
+        vertex_set partial_unvisited;
+        vertex_set_init(&partial_unvisited, graph->num_nodes);
+
+        #pragma omp for
+        for (int i = 0; i < graph->num_nodes; ++i) {
+            if (distances[i] == NOT_VISITED_MARKER) {
+                partial_unvisited.vertices[partial_unvisited.count++] = i;
+            }
+        }
+
+        int index = __sync_fetch_and_add(&unvisited->count, partial_unvisited.count);
+        memcpy(unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
+    }
+}
+
 void bfs_hybrid(Graph graph, solution* sol)
 {
     float ratio = graph->num_edges / (float)graph->num_nodes;
     // std::cout << "Ratio: " << ratio << std::endl;
-    // if (ratio < 7) {
-    //     bfs_top_down(graph, sol);
-    // }
-    // else {
-    //     bfs_bottom_up(graph, sol);
-    // }
     
     // start with top down bfs
     // keep aggregate sum of # nodes visited (in frontier)
     // at some threshold, swap to bottom up bfs
 
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set list3;
+    vertex_set list4;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+    vertex_set_init(&list3, graph->num_nodes);
+    vertex_set_init(&list4, graph->num_nodes);
+
+    vertex_set* frontier      = &list1;
+    vertex_set* new_frontier  = &list2;
+    vertex_set* unvisited     = &list3;
+    vertex_set* new_unvisited = &list4;
+
+    // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for                                                        
+    for (int i=0; i<graph->num_nodes; i++) {
+        sol->distances[i] = NOT_VISITED_MARKER;
+    }
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+
+    int* flags = (int *)calloc(graph->num_nodes, sizeof(int)); //new int[graph->num_nodes];
+    // memset(flags, 0, sizeof(int)*graph->num_nodes);
+    flags[0] = 1;
+
+    int nodes_visited = 1;
+    bool has_run_bottom_up = false;
+
+    while (frontier->count != 0) {
+
+        vertex_set_clear(new_frontier);
+        
+
+        if (nodes_visited < (int)(graph->num_nodes*0.66)) {
+            top_down_step(graph, frontier, new_frontier, sol->distances);
+        } else {
+            // if we haven't run bottom up yet, we need to build the unvisited set
+            if (!has_run_bottom_up) {
+                initialize_unvisited(graph, sol->distances, unvisited);
+            }
+            vertex_set_clear(new_unvisited);
+
+            bottom_up_step(graph, frontier, new_frontier, unvisited, new_unvisited, flags, sol->distances);
+
+            vertex_set* tmp = unvisited;
+            unvisited = new_unvisited;
+            new_unvisited = tmp;
+
+            has_run_bottom_up = true;
+        }
+
+
+        nodes_visited += new_frontier->count;
+
+        // swap pointers
+        vertex_set* tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
+    }
+
+    free(flags);
 
 }
