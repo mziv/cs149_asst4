@@ -123,8 +123,7 @@ void bottom_up_step(
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < frontier->count; ++i) {
         flags[frontier->vertices[i]] = 1;
     }
@@ -212,7 +211,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
     vertex_set* new_unvisited = &list4;
 
     // initialize all nodes to NOT_VISITED
-    #pragma omp parallel for                                                        
+    #pragma omp parallel for schedule(static)
     for (int i=0; i<graph->num_nodes; i++) {
         sol->distances[i] = NOT_VISITED_MARKER;
         unvisited->vertices[i] = i + 1; // WARNING: this assumes root node id is always 0
@@ -298,18 +297,16 @@ void bfs_hybrid(Graph graph, solution* sol)
     vertex_set* new_unvisited = &list4;
 
     // initialize all nodes to NOT_VISITED
-    // #pragma omp parallel for                                                        
-    // for (int i=0; i<graph->num_nodes; i++) {
-    //     sol->distances[i] = NOT_VISITED_MARKER;
-    // }
-    memset(sol->distances, NOT_VISITED_MARKER, sizeof(int)*graph->num_nodes);
+    #pragma omp parallel for schedule(static)                                                     
+    for (int i=0; i<graph->num_nodes; i++) {
+        sol->distances[i] = NOT_VISITED_MARKER;
+    }
     sol->distances[ROOT_NODE_ID] = 0;
 
     // setup frontier with the root node
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
 
-    int* flags = (int *)calloc(graph->num_nodes, sizeof(int)); //new int[graph->num_nodes];
-    // memset(flags, 0, sizeof(int)*graph->num_nodes);
+    int* flags = (int *)calloc(graph->num_nodes, sizeof(int)); 
     flags[0] = 1;
 
     int nodes_visited = 1;
