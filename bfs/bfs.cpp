@@ -298,10 +298,11 @@ void bfs_hybrid(Graph graph, solution* sol)
     vertex_set* new_unvisited = &list4;
 
     // initialize all nodes to NOT_VISITED
-    #pragma omp parallel for                                                        
-    for (int i=0; i<graph->num_nodes; i++) {
-        sol->distances[i] = NOT_VISITED_MARKER;
-    }
+    // #pragma omp parallel for                                                        
+    // for (int i=0; i<graph->num_nodes; i++) {
+    //     sol->distances[i] = NOT_VISITED_MARKER;
+    // }
+    memset(sol->distances, NOT_VISITED_MARKER, sizeof(int)*graph->num_nodes);
     sol->distances[ROOT_NODE_ID] = 0;
 
     // setup frontier with the root node
@@ -319,7 +320,7 @@ void bfs_hybrid(Graph graph, solution* sol)
         vertex_set_clear(new_frontier);
         
 
-        if (nodes_visited < (int)(graph->num_nodes*0.45)) {
+        if (nodes_visited < (int)(graph->num_nodes*0.5)) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
         } else {
             // if we haven't run bottom up yet, we need to build the unvisited set
