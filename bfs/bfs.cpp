@@ -122,14 +122,11 @@ void bottom_up_step(
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
-    // #pragma omp parallel for
-    // for (int i = 0; i < frontier->count; ++i) {
-    //     flags[frontier->vertices[i]] = 1;
-    // }
-
-    int* flags = new int[g->num_nodes];
-    memcpy(flags, distances, g->num_nodes*sizeof(int));
+    int* flags = (int *)calloc(g->num_nodes, sizeof(int));
+    #pragma omp parallel for
+    for (int i = 0; i < frontier->count; ++i) {
+        flags[frontier->vertices[i]] = 1;
+    }
 
     // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
@@ -155,7 +152,7 @@ void bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (flags[g->incoming_edges[neighbor]] != NOT_VISITED_MARKER) {
+                if (flags[g->incoming_edges[neighbor]] == 1) {
                     shares_edge = true;
                     break;
                 }
@@ -193,8 +190,7 @@ void bottom_up_step(
         // printf("copying over pieces %.4f sec\n", end_time - start_time);
     }
 
-    // free(flags);
-    delete[] flags;
+    free(flags);
 }
 
 
