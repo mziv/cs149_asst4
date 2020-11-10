@@ -195,7 +195,7 @@ void bottom_up_step(
 
 void bfs_bottom_up(Graph graph, solution* sol)
 {
-    std::cout << "edge to node ratio: " << graph->num_edges / (float) graph->num_nodes << std::endl;
+    // std::cout << "edge to node ratio: " << graph->num_edges / (float) graph->num_nodes << std::endl;
 
     vertex_set list1;
     vertex_set list2;
