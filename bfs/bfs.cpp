@@ -319,7 +319,7 @@ void bfs_hybrid(Graph graph, solution* sol)
         vertex_set_clear(new_frontier);
         
 
-        if (nodes_visited < (int)(graph->num_nodes*0.5)) {
+        if (nodes_visited < (int)(graph->num_nodes*0.33)) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
         } else {
             // if we haven't run bottom up yet, we need to build the unvisited set
