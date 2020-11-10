@@ -117,18 +117,17 @@ void bottom_up_step(
     vertex_set* new_frontier,
     vertex_set* unvisited,
     vertex_set* new_unvisited,
+    int* flags,
     int* distances)
 {
     // std::cout << "bottom UP" << std::endl;
     int cur_dist = distances[frontier->vertices[0]] + 1;
 
-    int* flags = (int *)calloc(g->num_nodes, sizeof(int));
+    // int* flags = (int *)calloc(g->num_nodes, sizeof(int));
     #pragma omp parallel for
     for (int i = 0; i < frontier->count; ++i) {
         flags[frontier->vertices[i]] = 1;
     }
-
-    // TODO: try tomorrow - separate boolean array instead of rebuilding flags
 
     // for each vertex v in graph:
     #pragma omp parallel
@@ -190,7 +189,7 @@ void bottom_up_step(
         // printf("copying over pieces %.4f sec\n", end_time - start_time);
     }
 
-    free(flags);
+    // free(flags);
 }
 
 
@@ -223,6 +222,10 @@ void bfs_bottom_up(Graph graph, solution* sol)
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
 
+    int* flags = new int[graph->num_nodes];
+    memset(flags, 0, sizeof(int)*graph->num_nodes);
+    flags[0] = 1;
+
     while (frontier->count != 0) {
 
 #ifdef VERBOSE
@@ -232,7 +235,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
         vertex_set_clear(new_frontier);
         vertex_set_clear(new_unvisited);
 
-        bottom_up_step(graph, frontier, new_frontier, unvisited, new_unvisited, sol->distances);
+        bottom_up_step(graph, frontier, new_frontier, unvisited, new_unvisited, flags, sol->distances);
 #ifdef VERBOSE
     double end_time = CycleTimer::currentSeconds();
     printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
@@ -247,6 +250,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
         unvisited = new_unvisited;
         new_unvisited = tmp;
     }
+
+    delete[] flags;
 }
 
 void bfs_hybrid(Graph graph, solution* sol)
