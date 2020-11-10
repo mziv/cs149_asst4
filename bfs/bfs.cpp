@@ -268,7 +268,7 @@ void bfs_hybrid(Graph graph, solution* sol)
 {
     float ratio = graph->num_edges / (float)graph->num_nodes;
     // std::cout << "Ratio: " << ratio << std::endl;
-    if (ratio < 7) {
+    if (ratio < 15) {
         bfs_top_down(graph, sol);
     }
     else {
