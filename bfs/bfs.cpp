@@ -113,11 +113,18 @@ void bfs_top_down(Graph graph, solution* sol) {
 bool bottom_up_step(
     Graph g,
     int* flags,
+    vertex_set* frontier,
+    vertex_set* new_frontier,
     int* distances, 
     int next_dist)
 {
     int cur_dist = next_dist;
     bool frontier_left = false;
+
+    #pragma omp parallel for	
+    for (int i = 0; i < frontier->count; ++i) {	
+        flags[frontier->vertices[i]] = 1;	
+    }
 
     // for each vertex v in graph:
     #pragma omp parallel
@@ -152,11 +159,13 @@ bool bottom_up_step(
             }
         }
 
-        #pragma omp barrier
+        // #pragma omp barrier
 
-        for (int i = 0; i < partial_frontier.count; i++) {
-            flags[partial_frontier.vertices[i]] = 1;
-        }
+        // for (int i = 0; i < partial_frontier.count; i++) {
+        //     flags[partial_frontier.vertices[i]] = 1;
+        // }
+        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
+        memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
     }
 
     return frontier_left;
@@ -165,6 +174,14 @@ bool bottom_up_step(
 
 void bfs_bottom_up(Graph graph, solution* sol)
 {
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set* frontier = &list1;
+    vertex_set* new_frontier = &list2;
+
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
     for (int i=0; i<graph->num_nodes; i++) {
@@ -180,8 +197,15 @@ void bfs_bottom_up(Graph graph, solution* sol)
     int next_dist = 1;
 
     while (work_to_do) {
-        work_to_do = bottom_up_step(graph, flags, sol->distances, next_dist);
+        vertex_set_clear(new_frontier);
+
+        work_to_do = bottom_up_step(graph, flags, frontier, new_frontier, sol->distances, next_dist);
         next_dist++;
+
+        // swap pointers
+        vertex_set* tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
     }
 
     free(flags);
@@ -242,7 +266,7 @@ void bfs_hybrid(Graph graph, solution* sol)
                 }
             }
 
-            work_to_do = bottom_up_step(graph, flags, sol->distances, next_dist);
+            work_to_do = bottom_up_step(graph, flags, frontier, new_frontier, sol->distances, next_dist);
         }
 
 
