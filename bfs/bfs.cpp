@@ -145,7 +145,7 @@ bool bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (flags[g->incoming_edges[neighbor]] == 1) {
+                if (distances[g->incoming_edges[neighbor]] != NOT_VISITED_MARKER && flags[g->incoming_edges[neighbor]] != 1) {
                     shares_edge = true;
                     break;
                 }
@@ -153,20 +153,26 @@ bool bottom_up_step(
             
             if (shares_edge) {
                 // add vertex v to frontier
+                flags[v] = 1;
                 partial_frontier.vertices[partial_frontier.count++] = v;
                 distances[v] = cur_dist;
+
+                #pragma omp critical
+                // std::cout << "setting " << v << " to " << cur_dist << std::endl;
                 frontier_left = true;
             }
         }
 
-        #pragma omp barrier
+        // #pragma omp barrier
 
-        for (int i = 0; i < partial_frontier.count; i++) {
-            flags[partial_frontier.vertices[i]] = 1;
-        }
+        // for (int i = 0; i < partial_frontier.count; i++) {
+        //     flags[partial_frontier.vertices[i]] = 1;
+        // }
         // int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
         // memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
     }
+
+    // free(flags);
 
     return frontier_left;
 }
@@ -190,7 +196,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
 
     // setup frontier with the root node
     int* flags = (int *)calloc(graph->num_nodes, sizeof(int));
-    flags[ROOT_NODE_ID] = 1;
+    // flags[ROOT_NODE_ID] = 1;
     sol->distances[ROOT_NODE_ID] = 0;
 
     bool work_to_do = true;
@@ -198,6 +204,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
 
     while (work_to_do) {
         vertex_set_clear(new_frontier);
+        free(flags);
+        flags = (int *)calloc(graph->num_nodes, sizeof(int));
 
         work_to_do = bottom_up_step(graph, flags, frontier, new_frontier, sol->distances, next_dist);
         next_dist++;
@@ -259,12 +267,14 @@ void bfs_hybrid(Graph graph, solution* sol)
         if (nodes_visited < (int)(graph->num_nodes*threshold)) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
         } else {
-            if (!has_run_bottom_up) {
-                #pragma omp parallel for
-                for (int i = 0; i < frontier->count; ++i) {
-                    flags[frontier->vertices[i]] = 1;
-                }
-            }
+            // if (!has_run_bottom_up) {
+            //     #pragma omp parallel for
+            //     for (int i = 0; i < frontier->count; ++i) {
+            //         flags[frontier->vertices[i]] = 1;
+            //     }
+            // }
+            free(flags);
+            flags = (int *)calloc(graph->num_nodes, sizeof(int));
 
             work_to_do = bottom_up_step(graph, flags, frontier, new_frontier, sol->distances, next_dist);
         }
