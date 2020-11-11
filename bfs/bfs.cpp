@@ -97,7 +97,7 @@ void bfs_top_down(Graph graph, solution* sol) {
         vertex_set_clear(new_frontier);
 
         top_down_step(graph, frontier, new_frontier, sol->distances);
-        //barrier();
+
 #ifdef VERBOSE
     double end_time = CycleTimer::currentSeconds();
     printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
@@ -121,10 +121,10 @@ bool bottom_up_step(
     int cur_dist = next_dist;
     bool frontier_left = false;
 
-    #pragma omp parallel for	
-    for (int i = 0; i < frontier->count; ++i) {	
-        flags[frontier->vertices[i]] = 1;	
-    }
+    // #pragma omp parallel for	
+    // for (int i = 0; i < frontier->count; ++i) {	
+    //     flags[frontier->vertices[i]] = 1;	
+    // }
 
     // for each vertex v in graph:
     #pragma omp parallel
@@ -159,13 +159,13 @@ bool bottom_up_step(
             }
         }
 
-        // #pragma omp barrier
+        #pragma omp barrier
 
-        // for (int i = 0; i < partial_frontier.count; i++) {
-        //     flags[partial_frontier.vertices[i]] = 1;
-        // }
-        int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
-        memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
+        for (int i = 0; i < partial_frontier.count; i++) {
+            flags[partial_frontier.vertices[i]] = 1;
+        }
+        // int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
+        // memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
     }
 
     return frontier_left;
