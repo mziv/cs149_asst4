@@ -90,9 +90,18 @@ void bfs_top_down(Graph graph, solution* sol) {
 
     while (frontier->count != 0) {
 
+#ifdef VERBOSE
+        double start_time = CycleTimer::currentSeconds();
+#endif
+
         vertex_set_clear(new_frontier);
 
         top_down_step(graph, frontier, new_frontier, sol->distances);
+        //barrier();
+#ifdef VERBOSE
+    double end_time = CycleTimer::currentSeconds();
+    printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+#endif
 
         // swap pointers
         vertex_set* tmp = frontier;
@@ -101,22 +110,9 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-/****** BEGIN BOTTOM UP *******/
-
-// Bitarray implementation taken from this stack overflow post: https://stackoverflow.com/questions/3806469/bit-array-in-c
-bool get(uint8_t* flags, int i) {
-    return flags[i / 8] & (1 << (i % 8));
-}
-
-// Note that this can only set to 1s, but that's fine for our purposes
-void set(uint8_t* flags, int i) {
-    flags[i >> 3] |= 1 << (i & 7);
-}
-
-
 bool bottom_up_step(
     Graph g,
-    uint8_t* flags,
+    int* flags,
     int* distances, 
     int next_dist)
 {
@@ -142,8 +138,7 @@ bool bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                // if (flags[g->incoming_edges[neighbor]] == 1) {
-                if (get(flags, g->incoming_edges[neighbor])) {
+                if (flags[g->incoming_edges[neighbor]] == 1) {
                     shares_edge = true;
                     break;
                 }
@@ -160,8 +155,7 @@ bool bottom_up_step(
         #pragma omp barrier
 
         for (int i = 0; i < partial_frontier.count; i++) {
-            // flags[partial_frontier.vertices[i]] = 1;
-            set(flags, partial_frontier.vertices[i]);
+            flags[partial_frontier.vertices[i]] = 1;
         }
     }
 
@@ -178,9 +172,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
     }
 
     // setup frontier with the root node
-    uint8_t* flags = (uint8_t *)calloc(graph->num_nodes / 8 + 1, sizeof(uint8_t));
-    // flags[ROOT_NODE_ID] = 1;
-    set(flags, ROOT_NODE_ID);
+    int* flags = (int *)calloc(graph->num_nodes, sizeof(int));
+    flags[ROOT_NODE_ID] = 1;
     sol->distances[ROOT_NODE_ID] = 0;
 
     bool work_to_do = true;
@@ -223,8 +216,8 @@ void bfs_hybrid(Graph graph, solution* sol)
     // setup frontier with the root node
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
 
-    uint8_t* flags = (uint8_t *)calloc(graph->num_nodes / 8 + 1, sizeof(uint8_t));
-    set(flags, ROOT_NODE_ID);
+    int* flags = (int *)calloc(graph->num_nodes, sizeof(int)); 
+    flags[0] = 1;
 
     int nodes_visited = 1;
     bool has_run_bottom_up = false;
@@ -245,8 +238,7 @@ void bfs_hybrid(Graph graph, solution* sol)
             if (!has_run_bottom_up) {
                 #pragma omp parallel for
                 for (int i = 0; i < frontier->count; ++i) {
-                    // flags[frontier->vertices[i]] = 1;
-                    set(flags, frontier->vertices[i]);
+                    flags[frontier->vertices[i]] = 1;
                 }
             }
 
