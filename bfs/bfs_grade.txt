@@ -1,0 +1,89 @@
+Max system threads = 32
+Running with 32 threads
+
+Graph: grid1000x1000.graph
+
+Top down bfs
+ref_time: 0.0494221s
+stu_time: 0.023342s
+
+Bottom up bfs
+ref_time: 0.65209s
+stu_time: 0.621908s
+
+Hybrid bfs
+ref_time: 0.26874s
+stu_time: 0.228958s
+
+Graph: soc-livejournal1_68m.graph
+
+Top down bfs
+ref_time: 0.0821672s
+stu_time: 0.0371333s
+
+Bottom up bfs
+ref_time: 0.0618354s
+stu_time: 0.0939066s
+
+Hybrid bfs
+ref_time: 0.0440677s
+stu_time: 0.0396258s
+
+Graph: com-orkut_117m.graph
+
+Top down bfs
+ref_time: 0.0889909s
+stu_time: 0.062505s
+
+Bottom up bfs
+ref_time: 0.0582953s
+stu_time: 0.0637891s
+
+Hybrid bfs
+ref_time: 0.0643613s
+stu_time: 0.0273217s
+
+Graph: random_500m.graph
+
+Top down bfs
+ref_time: 1.40091s
+stu_time: 0.80431s
+
+Bottom up bfs
+ref_time: 2.44826s
+stu_time: 2.87122s
+
+Hybrid bfs
+ref_time: 0.923939s
+stu_time: 0.295254s
+
+Graph: rmat_200m.graph
+
+Top down bfs
+ref_time: 0.601601s
+stu_time: 0.315333s
+
+Bottom up bfs
+ref_time: 0.47589s
+stu_time: 0.526476s
+
+Hybrid bfs
+ref_time: 0.455027s
+stu_time: 0.355412s
+
+
+--------------------------------------------------------------------------
+SCORES :                    |   Top-Down    |   Bott-Up    |    Hybrid    |
+--------------------------------------------------------------------------
+grid1000x1000.graph         |      2.00 / 2 |     3.00 / 3 |     3.00 / 3 |
+--------------------------------------------------------------------------
+soc-livejournal1_68m.graph  |      2.00 / 2 |     2.75 / 3 |     3.00 / 3 |
+--------------------------------------------------------------------------
+com-orkut_117m.graph        |      2.00 / 2 |     3.00 / 3 |     3.00 / 3 |
+--------------------------------------------------------------------------
+random_500m.graph           |      7.00 / 7 |     8.00 / 8 |     8.00 / 8 |
+--------------------------------------------------------------------------
+rmat_200m.graph             |      7.00 / 7 |     8.00 / 8 |     8.00 / 8 |
+--------------------------------------------------------------------------
+TOTAL                                                      |  69.75 / 70 |
+--------------------------------------------------------------------------
