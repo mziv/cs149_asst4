@@ -113,8 +113,8 @@ void bfs_top_down(Graph graph, solution* sol) {
 
 bool bottom_up_step(
     Graph g,
-    int* frontier,
-    int* new_frontier,
+    bool* frontier,
+    bool* new_frontier,
     int* distances, 
     int next_dist)
 {
@@ -146,7 +146,7 @@ bool bottom_up_step(
                             : g->incoming_starts[v + 1];
             
             for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-                if (frontier[g->incoming_edges[neighbor]] == 1) {
+                if (frontier[g->incoming_edges[neighbor]]) {
                     shares_edge = true;
                     break;
                 }
@@ -191,8 +191,8 @@ void bfs_bottom_up(Graph graph, solution* sol)
     }
 
     // setup frontier with the root node
-    int* frontier = (int *)calloc(graph->num_nodes, sizeof(int));
-    int* new_frontier = (int *)calloc(graph->num_nodes, sizeof(int));
+    bool* frontier = (bool *)calloc(graph->num_nodes, sizeof(bool));
+    bool* new_frontier = (bool *)calloc(graph->num_nodes, sizeof(bool));
     frontier[ROOT_NODE_ID] = 1;
     sol->distances[ROOT_NODE_ID] = 0;
 
@@ -206,7 +206,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
         next_dist++;
 
         // swap pointers
-        int* tmp = frontier;
+        bool* tmp = frontier;
         frontier = new_frontier;
         new_frontier = tmp;
     }
@@ -244,8 +244,8 @@ void bfs_hybrid(Graph graph, solution* sol)
     // setup frontier with the root node
     frontier->vertices[frontier->count++] = ROOT_NODE_ID;
 
-    int* flags1 = (int *)calloc(graph->num_nodes, sizeof(int)); 
-    int* flags2 = (int *)calloc(graph->num_nodes, sizeof(int)); 
+    bool* flags1 = (bool *)calloc(graph->num_nodes, sizeof(bool)); 
+    bool* flags2 = (bool *)calloc(graph->num_nodes, sizeof(bool)); 
 
     int nodes_visited = 1;
     bool has_run_bottom_up = false;
@@ -282,7 +282,7 @@ void bfs_hybrid(Graph graph, solution* sol)
         frontier = new_frontier;
         new_frontier = tmp;
 
-        int* tmp2 = flags1;
+        bool* tmp2 = flags1;
         flags1 = flags2;
         flags2 = tmp2;
 
