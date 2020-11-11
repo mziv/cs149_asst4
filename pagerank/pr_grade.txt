@@ -1,0 +1,33 @@
+Max system threads = 32
+Running with 32 threads
+
+Graph: soc-livejournal1_68m.graph
+ref_time: 0.836026s
+stu_time: 1.01683s
+
+Graph: com-orkut_117m.graph
+ref_time: 0.607507s
+stu_time: 0.73352s
+
+Graph: rmat_200m.graph
+ref_time: 4.28381s
+stu_time: 5.19077s
+
+Graph: random_500m.graph
+ref_time: 8.72755s
+stu_time: 9.36598s
+
+
+-------------------------------------------
+SCORES :
+-------------------------------------------
+soc-livejournal1_68m.graph  |   4.00000 / 4 |
+-------------------------------------------
+com-orkut_117m.graph        |   4.00000 / 4 |
+-------------------------------------------
+rmat_200m.graph             |   4.00000 / 4 |
+-------------------------------------------
+random_500m.graph           |   4.00000 / 4 |
+-------------------------------------------
+TOTAL                       |   16.00000 / 16 |
+-------------------------------------------
