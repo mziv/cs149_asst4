@@ -134,14 +134,14 @@ void bottom_up_step(
         vertex_set partial_frontier;
         vertex_set_init(&partial_frontier, g->num_nodes);
         
-        vertex_set partial_unvisited;
-        vertex_set_init(&partial_unvisited, g->num_nodes);
+        // vertex_set partial_unvisited;
+        // vertex_set_init(&partial_unvisited, g->num_nodes);
 
         // if v has not been visited 
-        // double start_time = CycleTimer::currentSeconds();
         #pragma omp for
-        for (int i = 0; i < unvisited->count; ++i) {
-            int v = unvisited->vertices[i];            
+        for (int v = 0; v < g->num_nodes; ++v) {
+            if (distances[v] != NOT_VISITED_MARKER) continue;
+            // int v = unvisited->vertices[i];            
             // check if v shares an incoming edge with a vertex u on the frontier
             bool shares_edge = false;
             int start_edge = g->incoming_starts[v];
@@ -162,33 +162,24 @@ void bottom_up_step(
                 distances[v] = cur_dist;
             } else {
                 // v is still unvisited
-                partial_unvisited.vertices[partial_unvisited.count++] = v;
+                // partial_unvisited.vertices[partial_unvisited.count++] = v;
             }
         }
-        // double end_time = CycleTimer::currentSeconds();
-        // printf("looping over unvisited %.4f sec\n", end_time - start_time);
 
-        // #pragma omp barrier
+        // int index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
+        // memcpy(new_unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
 
-        // start_time = CycleTimer::currentSeconds();
+        #pragma omp barrier
+
         int index = __sync_fetch_and_add(&new_frontier->count, partial_frontier.count);
         memcpy(new_frontier->vertices + index, (partial_frontier.vertices), sizeof(int)*partial_frontier.count);
-        // #pragma omp parallel for                                                        
-        // for (int i = 0; i < partial_frontier.size(); ++i) {            
-        //     new_frontier->vertices[i + index] = partial_frontier[i];
+
+        // for (int i = 0; i < partial_frontier.count; i++) {
+        //     flags[partial_frontier.vertices[i]] = 1;
         // }
 
-        index = __sync_fetch_and_add(&new_unvisited->count, partial_unvisited.count);
-        memcpy(new_unvisited->vertices + index, (partial_unvisited.vertices), sizeof(int)*partial_unvisited.count);
-        // #pragma omp parallel for                                                   
-        // for (int i = 0; i < partial_unvisited.size(); ++i) {            
-        //     new_unvisited->vertices[i + index] = partial_unvisited[i];
-        // }
-        // end_time = CycleTimer::currentSeconds();
-        // printf("copying over pieces %.4f sec\n", end_time - start_time);
+        
     }
-
-    // free(flags);
 }
 
 
